@@ -40,3 +40,35 @@ export async function upsertArticle(row: Record<string, unknown>) {
   });
   if (!res.ok) throw new Error(`save ${res.status}`);
 }
+
+// תמונות במסגרות: אותו דלי כמו באתר המקורי (article-media, ציבורי).
+export const BUCKET = 'article-media';
+export const publicUrl = (path: string) => `${SB_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+
+export async function uploadImage(path: string, blob: Blob) {
+  const res = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    method: 'POST',
+    headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`, 'Content-Type': blob.type, 'x-upsert': 'true' },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`העלאה ${res.status}`);
+  return publicUrl(path);
+}
+
+/** כותב את ההחלפה ל-media_assets.<slot>.musag, בלי לגעת בתמונה המקורית. url ריק מחזיר את המקור. */
+export async function setMediaOverride(id: string, slot: 'exterior' | 'interior', url: string | null) {
+  const get = await fetch(`${SB_URL}/rest/v1/articles?id=eq.${id}&select=media_assets`, { headers });
+  if (!get.ok) throw new Error(`קריאה ${get.status}`);
+  const rows = await get.json();
+  if (!rows.length) throw new Error('המושג לא נמצא בשרת');
+  const media = rows[0].media_assets || {};
+  const cur = { ...(media[slot] || {}) };
+  if (url) cur.musag = { url, at: new Date().toISOString() }; else delete cur.musag;
+  const next = { ...media, [slot]: cur };
+  const res = await fetch(`${SB_URL}/rest/v1/articles?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { ...headers, Prefer: 'return=minimal' },
+    body: JSON.stringify({ media_assets: next, updated_at: new Date().toISOString() }),
+  });
+  if (!res.ok) throw new Error(`שמירה ${res.status}`);
+}

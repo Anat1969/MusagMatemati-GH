@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import CopyButton from '../components/CopyButton';
 import Diagram from '../components/Diagram';
+import ImageFrame from '../components/ImageFrame';
 import LiveModel from '../components/LiveModel';
 import Rich, { Name, Src } from '../components/Rich';
 import { bySlug, CONCEPTS, Concept, forceOf } from '../lib/concepts';
@@ -65,11 +66,11 @@ function Hero({ c, ops }: { c: Concept; ops: JSX.Element }) {
       <Rich as="p" className="ft-deck">{`${c.insightLine}\n${c.insightText}`}</Rich>
     </header>
   );
-  const img = <img src={c.images.exterior} alt={`${c.architecturalName}, חזית`} />;
-  const cap = <figcaption className="ft-caption">הדמיה שנוצרה במחולל MathArch, לפי הפרומפט שבסוף הכתבה.</figcaption>;
-  if (c.layout === 'split') return (<div className="ft-split">{ops}<figure>{img}{cap}</figure>{head}</div>);
-  if (c.layout === 'strip') return (<>{ops}{head}<figure className="ft-strip">{img}{cap}</figure></>);
-  return (<>{ops}<figure className="ft-full">{img}<div className="ft-full-shade">{head}</div>{cap}</figure></>);
+  const capText = 'הדמיה שנוצרה במחולל MathArch. אפשר להחליף: גררו, הדביקו או העלו תמונה.';
+  const frame = (cls: string, kids?: JSX.Element) => <ImageFrame id={c.id} slot="exterior" src={c.images.exterior} alt={`${c.architecturalName}, חזית`} className={cls} caption={capText}>{kids}</ImageFrame>;
+  if (c.layout === 'split') return (<div className="ft-split">{ops}{frame('')}{head}</div>);
+  if (c.layout === 'strip') return (<>{ops}{head}{frame('ft-strip')}</>);
+  return (<>{ops}{frame('ft-full', <div className="ft-full-shade">{head}</div>)}</>);
 }
 
 function SeedArticle({ c }: { c: Concept }) {
@@ -115,8 +116,8 @@ function SeedArticle({ c }: { c: Concept }) {
       <section className="building">
         <h2 className="section-head">הבניין מבחוץ ומבפנים.</h2>
         <div className="pair">
-          <figure><img src={c.images.exterior} alt={`${c.architecturalName}, חזית`} loading="lazy" /><figcaption className="ft-caption">חזית</figcaption></figure>
-          <figure><img src={c.images.interior} alt={`${c.architecturalName}, חלל פנימי`} loading="lazy" /><figcaption className="ft-caption">חלל פנימי</figcaption></figure>
+          <ImageFrame id={c.id} slot="exterior" src={c.images.exterior} alt={`${c.architecturalName}, חזית`} caption="חזית" lazy />
+          <ImageFrame id={c.id} slot="interior" src={c.images.interior} alt={`${c.architecturalName}, חלל פנימי`} caption="חלל פנימי" lazy />
         </div>
         {(c.videos.exterior || c.videos.interior) && (
           <div className="pair">
@@ -227,12 +228,10 @@ function GeneratedArticle({ g }: { g: Generated }) {
         <h1 className="ft-title">{d.architecturalName}</h1>
         <Rich as="p" className="ft-deck">{first}</Rich>
       </header>
-      {(g.images.exterior || g.images.interior) && (
-        <div className="pair">
-          {g.images.exterior && <figure><img src={g.images.exterior} alt="חזית" /><figcaption className="ft-caption">חזית</figcaption></figure>}
-          {g.images.interior && <figure><img src={g.images.interior} alt="חלל פנימי" /><figcaption className="ft-caption">חלל פנימי</figcaption></figure>}
-        </div>
-      )}
+      <div className="pair">
+        <ImageFrame id={g.id} slot="exterior" src={g.images.exterior} alt={`${d.architecturalName}, חזית`} caption="חזית" />
+        <ImageFrame id={g.id} slot="interior" src={g.images.interior} alt={`${d.architecturalName}, חלל פנימי`} caption="חלל פנימי" />
+      </div>
       <div className="ft-col">
         <section className="proverb">
           <span className="label">פתגם</span>
