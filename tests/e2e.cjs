@@ -123,9 +123,10 @@ async function mock(p, calls) {
     await p.waitForSelector('.live-card .live-plain');
     ok(await p.locator('.live-card').count() === 2, 'מודל חי: יחס הזהב מתחבר לספירלה ולפיבונאצ׳י');
     await p.goto(BASE + '#/c/prime', { waitUntil: 'networkidle' });
-    ok((await p.locator('.live h2').innerText()).includes('עוד אין גוף'), 'מודל חי: חור גלוי כשאין מודל');
+    await p.waitForSelector('.live-card .live-plain');
+    ok((await p.locator('.live-card').getAttribute('data-model')) === 'ulam_spiral', 'מודל חי: מספר ראשוני מתחבר לספירלת אולם');
     await p.goto(BASE + '#/magazine', { waitUntil: 'networkidle' });
-    ok(await p.locator('.mag-live').count() === 4, 'מגזין: תגית מודל חי לארבעה מושגים');
+    ok(await p.locator('.mag-live').count() === 6, 'מגזין: תגית מודל חי לכל ששת המושגים');
     await p.goto(BASE + '#/c/golden-ratio', { waitUntil: 'networkidle' });
     await p.locator('.brand').click();
     await p.waitForFunction(() => location.hash === '#/');

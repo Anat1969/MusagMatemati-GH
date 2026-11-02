@@ -227,6 +227,7 @@ export const CONCEPTS: Concept[] = [
       { to: 'golden-ratio', rule: 'שניהם עונים על השאלה **איך מחלקים**.', insight: 'φ מתחלק לעצמו שוב ושוב, והראשוני מסרב להתחלק.', action: 'מספר ראשוני של מפרשים, וכל מפרש ביחס φ.' },
       { to: 'integral', rule: 'משפט המספרים הראשוניים: מספר הראשוניים עד x קרוב ל-**∫dt/ln t**.', insight: 'גם מה שנראה אקראי מציית לצבירה רציפה.', action: 'חפשו בעיר סדר שנראה מקרי: חלונות, עצים, תחנות. האם יש בו קצב?' },
     ],
+    models: [{ id: 'ulam_spiral', relation: 'near', why: 'הראשוניים, מסודרים בספירלה על רשת, נעשים **דפוס** של מלא וריק: אלכסונים בתוך פיזור.' }],
     images: { exterior: 'media/prime-ext.webp', interior: 'media/prime-int.webp' },
     videos: {
       exterior: `${MEDIA}/1857174f-7c06-4a43-a2ea-cb7e03fbee45/exterior-video-1778330785393.mp4`,
@@ -357,6 +358,7 @@ export const CONCEPTS: Concept[] = [
       { to: 'oxymoron', rule: 'שניהם חיים ב**מתח** בין סדר לאי־סדר.', insight: 'האנטרופיה היא מתח לאורך זמן. האוקסימורון הוא מתח ברגע אחד.', action: 'הציבו בחזית אחת חלק מדויק וחלק שמותר לו להתבלות.' },
       { to: 'integral', rule: 'ΔS = **∫dQ/T**: השינוי באנטרופיה הוא אינטגרל.', insight: 'בלייה היא צבירה של ימים.', action: 'תעדו נקודה אחת בעיר פעם בחודש.' },
     ],
+    models: [{ id: 'random_walk', relation: 'near', why: 'הילוך מקרי הוא מודל של **דיפוזיה**: כך מתפזר הסדר, וכך עולה האנטרופיה.' }],
     images: { exterior: 'media/entropy-ext.webp', interior: 'media/entropy-int.webp' },
     videos: {},
     generated: {
