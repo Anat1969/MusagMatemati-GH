@@ -32,10 +32,12 @@ export async function fetchArticles(): Promise<any[]> {
   return res.json();
 }
 
+const auth = async () => (await import('./auth')).writeHeaders();
+
 export async function upsertArticle(row: Record<string, unknown>) {
   const res = await fetch(`${SB_URL}/rest/v1/articles`, {
     method: 'POST',
-    headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    headers: { ...headers, ...(await auth()), Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify([row]),
   });
   if (!res.ok) throw new Error(`save ${res.status}`);
@@ -48,7 +50,7 @@ export const publicUrl = (path: string) => `${SB_URL}/storage/v1/object/public/$
 export async function uploadImage(path: string, blob: Blob) {
   const res = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
-    headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`, 'Content-Type': blob.type, 'x-upsert': 'true' },
+    headers: { ...(await auth()), 'Content-Type': blob.type, 'x-upsert': 'true' },
     body: blob,
   });
   if (!res.ok) throw new Error(`העלאה ${res.status}`);
@@ -67,7 +69,7 @@ export async function setMediaOverride(id: string, slot: 'exterior' | 'interior'
   const next = { ...media, [slot]: cur };
   const res = await fetch(`${SB_URL}/rest/v1/articles?id=eq.${id}`, {
     method: 'PATCH',
-    headers: { ...headers, Prefer: 'return=minimal' },
+    headers: { ...headers, ...(await auth()), Prefer: 'return=minimal' },
     body: JSON.stringify({ media_assets: next, updated_at: new Date().toISOString() }),
   });
   if (!res.ok) throw new Error(`שמירה ${res.status}`);

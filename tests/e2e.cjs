@@ -11,11 +11,17 @@ const DIM = { insight: 'פרקטל חוזר על עצמו בכל קנה מידה
 const REMOTE = [{ id: 'remote-1', concept: 'סימטריה', created_at: '2026-10-01T10:00:00Z', insight: 'סימטריה היא איזון.', architectural_name: 'אולם המראה', proverb: 'p', interpretation: 'i', exterior_prompt: 'e', interior_prompt: 'i', media_assets: {} }];
 
 const MEDIA = {};
+const AUTHS = [];
+const OTP_BODIES = [];
+// סשן מזויף של הבעלים, כדי שהכתיבה תיצא עם הכניסה שלה (התוקף רחוק, ולכן בלי רענון ברשת).
+const OWNER_SESSION = JSON.stringify({ access_token: 'owner-token', refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id: 'u1', aud: 'authenticated', role: 'authenticated', email: 'shtanat5@gmail.com', app_metadata: { provider: 'google' }, user_metadata: {}, created_at: '2026-11-02T00:00:00Z' } });
 async function mock(p, calls) {
   await p.route('**/appofapp-gh.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: MENU }));
   await p.route('**/math-creator.vercel.app/bridge.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: MC }));
   await p.route('**/*.supabase.co/**', (r) => {
     const u = r.request().url();
+    if (r.request().method() !== 'GET') AUTHS.push(r.request().headers()['authorization']);
+    if (u.includes('/auth/v1/otp')) { OTP_BODIES.push(r.request().postData() || ''); return r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); }
     calls.push(r.request().method() + ' ' + u.replace(/^https:\/\/[^/]+/, '') + (r.request().method() === 'PATCH' ? ' ' + r.request().postData() : ''));
     if (u.includes('/storage/v1/object/') && globalThis.STORAGE_DOWN) return r.fulfill({ status: 503, body: '' });
     if (u.includes('/functions/v1/generate-dimensions')) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(DIM) });
@@ -35,6 +41,7 @@ async function mock(p, calls) {
   try {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
     await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await ctx.addInitScript((s) => { if (!sessionStorage.getItem('guest')) localStorage.setItem('mm.auth', s); }, OWNER_SESSION);
     const p = await ctx.newPage();
     const calls = [];
     await mock(p, calls);
@@ -156,6 +163,7 @@ async function mock(p, calls) {
     await p.waitForFunction((s) => document.querySelector(s + ' img')?.src.includes('/storage/v1/object/public/article-media/'), '.pair ' + EXT);
     ok(true, 'הדבקה: התמונה עלתה לאחסון ומוצגת במסגרת');
     ok(calls.some((c) => c.startsWith('POST /storage/v1/object/article-media/27fa02c0') && c.includes('musag-exterior')), 'הדבקה: הקובץ נשלח לדלי article-media');
+    ok(AUTHS.some((a) => a === 'Bearer owner-token'), 'הכתיבה יוצאת עם הכניסה של הבעלים');
     ok(calls.some((c) => c.startsWith('PATCH /rest/v1/articles?id=eq.27fa02c0') && c.includes('"musag"')), 'הדבקה: ההחלפה נרשמה בשרת בלי למחוק את המקור');
     ok((await p.locator('.ft-split ' + EXT + ' img').getAttribute('src')).includes('article-media'), 'אותה תמונה מתעדכנת גם בתמונה הפותחת');
     await makeImage('.pair ' + INT, 'drop');
@@ -179,6 +187,24 @@ async function mock(p, calls) {
     globalThis.STORAGE_DOWN = false;
     await p.evaluate(() => { localStorage.removeItem('mm.editing'); localStorage.removeItem('mm.media.local.v1'); });
     await p.goto(BASE + '#/', { waitUntil: 'networkidle' });
+    // אורחת: בלי כניסה, התמונה נשמרת במכשיר בלבד ולא נשלחת לשרת
+    const gctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
+    await gctx.addInitScript(() => sessionStorage.setItem('guest', '1'));
+    const gp = await gctx.newPage(); const gcalls = []; await mock(gp, gcalls);
+    await gp.goto(BASE + '#/c/integral', { waitUntil: 'networkidle' });
+    ok((await gp.locator('ai-menu').evaluate((el) => el.items.map((i) => i.label).join('|'))).includes('כניסה: קישור למייל'), 'אורחת: כניסה בקישור למייל, בתוך כפתור הלוגו');
+    await gp.locator('ai-menu').evaluate((el) => el.items.find((i) => i.label.startsWith('כניסה')).onSelect());
+    await gp.waitForFunction(() => (document.querySelector('ai-menu').status || '').startsWith('נשלח קישור'));
+    ok(OTP_BODIES.length === 1 && JSON.parse(OTP_BODIES[0]).email === 'shtanat5@gmail.com', 'כניסה: קישור נשלח למייל של הבעלים בלבד');
+    await gp.evaluate(async () => {
+      const c = document.createElement('canvas'); c.width = 50; c.height = 40; const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+      const dt = new DataTransfer(); dt.items.add(new File([blob], 'g.png', { type: 'image/png' }));
+      const el = document.querySelector('.pair .frame'); el.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    });
+    await gp.waitForSelector('.pair .frame .frame-status:has-text("כניסה בכפתור הלוגו")');
+    ok(!gcalls.some((c) => c.startsWith('POST /storage')), 'אורחת: התמונה לא נשלחה לשרת, ונשמרה במכשיר עם הסבר');
+    await gctx.close();
+
 
     const radius = await p.evaluate(() => [...document.querySelectorAll('button, .field, .search-field')].every((x) => getComputedStyle(x).borderRadius === '0px'));
     ok(radius, 'כל הכפתורים והשדות מרובעים');
