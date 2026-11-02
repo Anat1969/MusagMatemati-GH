@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { setMediaOverride, uploadImage } from './api';
+import { isOwner } from './auth';
 
 // תמונות שהוחלפו במסגרות. מקור האמת: השרת (media_assets.<slot>.musag). בלי שרת: עותק במכשיר, עם חיווי.
 export type Slot = 'exterior' | 'interior';
@@ -57,13 +58,15 @@ export async function compress(file: Blob): Promise<Blob> {
 
 const toDataUrl = (b: Blob) => new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(b); });
 
-export type PutResult = 'server' | 'device';
+export type PutResult = 'server' | 'device' | 'guest';
 
 /** מעלה, רושם בשרת, ומעדכן מיד. בלי רשת: נשמר במכשיר בלבד. */
 export async function putImage(id: string, slot: Slot, file: Blob): Promise<PutResult> {
   const blob = await compress(file);
   const path = `${id}/musag-${slot}-${Date.now()}.webp`;
+  const guest = !isOwner();
   try {
+    if (guest) throw new Error('guest');
     const url = await uploadImage(path, blob);
     await setMediaOverride(id, slot, url);
     (session[id] ||= {})[slot] = url;
@@ -75,7 +78,7 @@ export async function putImage(id: string, slot: Slot, file: Blob): Promise<PutR
     const local = read(KEY_LOCAL); (local[id] ||= {})[slot] = { url: await toDataUrl(blob), local: true };
     if (!write(KEY_LOCAL, local)) throw new Error('אין מקום במכשיר, והשרת לא זמין. נסו שוב כשיש רשת.');
     emit();
-    return 'device';
+    return guest ? 'guest' : 'device';
   }
 }
 
@@ -85,7 +88,7 @@ export async function resetImage(id: string, slot: Slot) {
   (session[id] ||= {})[slot] = null;
   const remote = read(KEY_REMOTE); if (remote[id]) { delete remote[id][slot]; write(KEY_REMOTE, remote); }
   emit();
-  await setMediaOverride(id, slot, null);
+  if (isOwner()) await setMediaOverride(id, slot, null);
 }
 
 // מצב עריכה: נדלק מכפתור הלוגו. גרירה והדבקה עובדות תמיד; כפתורי ההעלאה וההחזרה רק במצב עריכה.

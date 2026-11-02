@@ -31,7 +31,7 @@ export default function ImageFrame({ id, slot, src, alt, className = '', imgClas
     setState({ kind: 'busy' });
     try {
       const where = await putImage(id, slot, file);
-      setState({ kind: 'ok', text: where === 'server' ? 'התמונה נשמרה, ותופיע בכל מכשיר' : 'נשמרה במכשיר הזה בלבד. השרת לא זמין כרגע' });
+      setState({ kind: 'ok', text: where === 'server' ? 'התמונה נשמרה, ותופיע בכל מכשיר' : where === 'guest' ? 'נשמרה במכשיר הזה. לשמירה לכולם: כניסה בכפתור הלוגו' : 'נשמרה במכשיר הזה בלבד. השרת לא זמין כרגע' });
     } catch (e) {
       setState({ kind: 'err', text: e instanceof Error ? e.message : 'השמירה נכשלה' });
     }
