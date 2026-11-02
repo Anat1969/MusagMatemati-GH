@@ -45,6 +45,8 @@ export interface Concept {
   action: { think: string; do: string };
   post: string;
   links: { to: string; rule: string; insight: string; action: string }[];
+  /** הגשר לאפליקציית "מודל חי" (math-creator): מודלים באטלס שלה. 'same' אותו מושג, 'near' מושג קרוב, עם הכלל שמחבר. */
+  models?: { id: string; relation: 'same' | 'near'; why: string }[];
   images: { exterior: string; interior: string };
   videos: { exterior?: string; interior?: string };
   generated: { insight: string; proverb: string; interpretation: string };
@@ -102,6 +104,10 @@ export const CONCEPTS: Concept[] = [
       { to: 'prime', rule: 'שניהם עונים על השאלה **איך מחלקים**.', insight: 'φ מתחלק לעצמו שוב ושוב, והראשוני מסרב להתחלק.', action: 'בחזית: φ לרוחב המפרשים, ומספר ראשוני של מפרשים כדי לקבל ציר מרכזי.' },
       { to: 'integral', rule: 'היחס בין מספרי פיבונאצ׳י עוקבים שואף ל-**φ**.', insight: 'יחס הזהב הוא גבול של צבירה, בדיוק כמו אינטגרל.', action: 'בנו סדרת חדרים בגדלים 1, 1, 2, 3, 5, 8 וראו איך היחס מתייצב.' },
     ],
+    models: [
+      { id: 'golden_spiral', relation: 'near', why: 'ספירלה שגדלה פי **φ** בכל רבע סיבוב: היחס הופך לצורה בתלת־ממד.' },
+      { id: 'fibonacci', relation: 'near', why: 'היחס בין שני מספרים סמוכים בסדרה שואף ל-**φ**.' },
+    ],
     images: { exterior: 'media/golden-ext.webp', interior: 'media/golden-int.webp' },
     videos: { exterior: `${MEDIA}/605fd0ce-885c-41ed-853c-f847e3fe9cd7/exterior-video-1782696490253.mp4` },
     generated: {
@@ -128,7 +134,7 @@ export const CONCEPTS: Concept[] = [
     layout: 'split',
     rule: {
       text: 'משטח עם **צד אחד** ו**שפה אחת**. מקבלים אותו כשמסובבים רצועה ב**חצי סיבוב** ומחברים את קצותיה.',
-      formula: '½ סיבוב → צד אחד, שפה אחת',
+      formula: 'חצי סיבוב ← צד אחד, שפה אחת',
       source: { label: 'אוגוסט פרדיננד מביוס August F. Möbius ויוהאן בנדיקט ליסטינג J. B. Listing, באופן בלתי תלוי, 1858', href: 'https://en.wikipedia.org/wiki/M%C3%B6bius_strip' },
     },
     insightLine: '**פנים וחוץ** הם אותו משטח.',
@@ -156,6 +162,7 @@ export const CONCEPTS: Concept[] = [
       { to: 'integral', rule: 'שניהם **מבטלים את הגבול**: מביוס בין צדדים, האינטגרל בין חלקים.', insight: 'רצף הוא לא היעדר חלוקה, אלא חלוקה כל כך דקה שאינה מורגשת.', action: 'תכננו מסלול שבו הקיר, הרצפה והתקרה הם פס אחד.' },
       { to: 'oxymoron', rule: 'משטח שהוא **פנים וחוץ** בבת אחת.', insight: 'רצועת מביוס היא אוקסימורון גאומטרי שעובד.', action: 'סמנו בתוכנית מקום אחד שהוא גם בפנים וגם בחוץ: מרפסת, אכסדרה, מעבר.' },
     ],
+    models: [{ id: 'mobius', relation: 'same', why: 'אותו משטח: **צד אחד** ו**שפה אחת**, בחצי סיבוב.' }],
     images: { exterior: 'media/mobius-ext.webp', interior: 'media/mobius-int.webp' },
     videos: {
       exterior: `${MEDIA}/27fa02c0-2586-483a-a425-2c58a2b70617/exterior-video-1778330203510.mp4`,
@@ -285,6 +292,7 @@ export const CONCEPTS: Concept[] = [
       { to: 'entropy', rule: 'קלאוזיוס הגדיר את השינוי באנטרופיה כ**אינטגרל**: ΔS = ∫dQ/T.', insight: 'גם הזמן מצטבר. בלייה היא אינטגרל של ימים.', action: 'תעדו נקודה אחת בעיר פעם בחודש, וחברו את התמונות לרצף.' },
       { to: 'golden-ratio', rule: 'היחס בין מספרי פיבונאצ׳י עוקבים שואף ל-**φ**.', insight: 'פרופורציה יכולה להיות תוצאה של צבירה.', action: 'סדרת חדרים בגדלים 1, 1, 2, 3, 5, 8.' },
     ],
+    models: [{ id: 'riemann', relation: 'same', why: 'סכום רימן הוא **ההגדרה** של האינטגרל: מלבנים שנעשים צרים עד שהם עקומה.' }],
     images: { exterior: 'media/integral-ext.webp', interior: 'media/integral-int.webp' },
     videos: {
       exterior: `${MEDIA}/5a9a1813-5fac-4fa1-8724-bc5e39c7a4f7/exterior-video-1778329374283.mp4`,
@@ -410,6 +418,7 @@ export const CONCEPTS: Concept[] = [
       { to: 'entropy', rule: 'שניהם חיים ב**מתח** בין סדר לאי־סדר.', insight: 'האוקסימורון הוא מתח ברגע אחד. האנטרופיה היא מתח לאורך זמן.', action: 'חזית שבה חלק אחד מדויק וחלק אחד חופשי.' },
       { to: 'mobius', rule: 'משטח שהוא **פנים וחוץ** בבת אחת.', insight: 'מביוס הוא אוקסימורון שהמתמטיקה מוכיחה.', action: 'מקום אחד בתוכנית שהוא גם בפנים וגם בחוץ.' },
     ],
+    models: [{ id: 'klein', relation: 'near', why: 'משטח שהפנים והחוץ שלו הם **אותו משטח**: סתירה שהגאומטריה מאפשרת.' }],
     images: { exterior: 'media/oxymoron-ext.webp', interior: 'media/oxymoron-int.webp' },
     videos: {
       exterior: `${MEDIA}/c657363a-401d-4670-906c-2eee860a4f36/exterior-video-1780700703080.mp4`,

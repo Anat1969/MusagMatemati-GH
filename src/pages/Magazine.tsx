@@ -77,7 +77,7 @@ export default function Magazine({ route }: { route: Route }) {
               <a key={c.slug} href={href('c', c.slug)} className={`mag-card press rise ${i === 0 && !sel.length && !q ? 'mag-lead' : ''}`} style={{ ['--fc' as any]: f.color, animationDelay: `${i * 0.05}s` }}>
                 <div className="mag-img"><img src={c.images.exterior} alt={c.architecturalName} loading="lazy" /></div>
                 <div className="mag-body">
-                  <div className="mag-meta"><span className="mag-force">{f.name}</span><span className="mag-latin" dir="ltr">{c.latin}</span></div>
+                  <div className="mag-meta"><span className="mag-force">{f.name}</span>{c.models && <span className="mag-live">מודל חי</span>}<span className="mag-latin" dir="ltr">{c.latin}</span></div>
                   <h2 className="mag-title">{c.name}</h2>
                   <div className="mag-arch">{c.architecturalName}</div>
                   <Rich as="p" className="mag-insight">{c.insightLine}</Rich>
