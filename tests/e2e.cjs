@@ -3,6 +3,7 @@ const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const MENU = fs.readFileSync(__dirname + '/fixtures/ai-menu.js', 'utf8');
+const MC = fs.readFileSync(__dirname + '/fixtures/mc-bridge.json', 'utf8');
 const BASE = 'http://localhost:4199/';
 const fails = [];
 const ok = (cond, msg) => { console.log((cond ? 'PASS ' : 'FAIL ') + msg); if (!cond) fails.push(msg); };
@@ -11,6 +12,7 @@ const REMOTE = [{ id: 'remote-1', concept: 'סימטריה', created_at: '2026-1
 
 async function mock(p, calls) {
   await p.route('**/appofapp-gh.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: MENU }));
+  await p.route('**/math-creator.vercel.app/bridge.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: MC }));
   await p.route('**/*.supabase.co/**', (r) => {
     const u = r.request().url();
     calls.push(r.request().method() + ' ' + u.replace(/^https:\/\/[^/]+/, ''));
@@ -43,7 +45,7 @@ async function mock(p, calls) {
     ok((await p.locator('.city-tip').innerText()).includes('יחס הזהב'), 'ריחוף על המקרא מדגיש בניין');
     await p.locator('svg.iso .iso-bldg').first().hover();
     ok((await p.locator('.legend-row.is-hot').count()) === 1, 'ריחוף על בניין מדגיש שורה במקרא');
-    ok(await p.locator('.hero-kpi .kpi').nth(2).innerText() === '1', 'מושג מהשרת נספר בדף הבית');
+    ok(await p.locator('.hero-kpi .kpi').nth(3).innerText() === '1', 'מושג מהשרת נספר בדף הבית');
 
     await p.locator('.legend-row', { hasText: 'רצועת מביוס' }).click();
     await p.waitForFunction(() => document.querySelector('h1')?.textContent === 'היכל המשטח היחידאי');
@@ -55,6 +57,11 @@ async function mock(p, calls) {
     await p.locator('.dg-ctl .chip', { hasText: '0' }).click();
     ok((await p.locator('.dg figcaption').innerText()).includes('שני צדדים'), 'שרטוט חי משתנה עם הבחירה');
 
+    await p.waitForSelector('.live-card .live-plain');
+    ok(await p.locator('.live-card').count() === 1, 'מודל חי: כרטיס אחד למביוס');
+    ok((await p.locator('.live-card').innerText()).includes('חד־צדדיות'), 'מודל חי: התכונות שעוברות למרחב, מתוך האטלס');
+    ok((await p.locator('.live-rel').innerText()) === 'אותו מושג', 'מודל חי: סוג הקשר');
+    ok((await p.locator('.live-open').getAttribute('href')) === 'https://math-creator.vercel.app/#/learn?m=mobius', 'מודל חי: קישור ישיר למודל');
     await p.locator('.op[aria-label="הבא"]').click();
     await p.waitForFunction(() => location.hash === '#/c/prime');
     ok(true, 'הבא עובר למושג הבא');
@@ -112,6 +119,13 @@ async function mock(p, calls) {
     await p.goto(BASE + '#/magazine?f=gen', { waitUntil: 'networkidle' });
     ok(await p.locator('.mag-card').count() === 2, 'מגזין: המושג החדש מופיע תחת מהמחולל');
 
+    await p.goto(BASE + '#/c/golden-ratio', { waitUntil: 'networkidle' });
+    await p.waitForSelector('.live-card .live-plain');
+    ok(await p.locator('.live-card').count() === 2, 'מודל חי: יחס הזהב מתחבר לספירלה ולפיבונאצ׳י');
+    await p.goto(BASE + '#/c/prime', { waitUntil: 'networkidle' });
+    ok((await p.locator('.live h2').innerText()).includes('עוד אין גוף'), 'מודל חי: חור גלוי כשאין מודל');
+    await p.goto(BASE + '#/magazine', { waitUntil: 'networkidle' });
+    ok(await p.locator('.mag-live').count() === 4, 'מגזין: תגית מודל חי לארבעה מושגים');
     await p.goto(BASE + '#/c/golden-ratio', { waitUntil: 'networkidle' });
     await p.locator('.brand').click();
     await p.waitForFunction(() => location.hash === '#/');

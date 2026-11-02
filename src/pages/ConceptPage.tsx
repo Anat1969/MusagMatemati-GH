@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import CopyButton from '../components/CopyButton';
 import Diagram from '../components/Diagram';
+import LiveModel from '../components/LiveModel';
 import Rich, { Name, Src } from '../components/Rich';
 import { bySlug, CONCEPTS, Concept, forceOf } from '../lib/concepts';
 import { go, href } from '../lib/route';
@@ -97,7 +98,7 @@ function SeedArticle({ c }: { c: Concept }) {
       <section className="rule-block">
         <div className="rule-text">
           <span className="label">הכלל</span>
-          <div className="formula" dir="ltr">{c.rule.formula}</div>
+          <div className={`formula ${/[א-ת]/.test(c.rule.formula) ? 'formula-he' : ''}`} dir="auto">{c.rule.formula}</div>
           <Rich as="p" className="rule-p">{c.rule.text}</Rich>
           <Src {...c.rule.source} />
         </div>
@@ -108,6 +109,8 @@ function SeedArticle({ c }: { c: Concept }) {
         <div className="tone tone-solution"><h4>כשזה עובד</h4><Rich as="p">{c.works}</Rich></div>
         <div className="tone tone-problem"><h4>כשזה נכשל</h4><Rich as="p">{c.fails}</Rich>{c.failsSource && <Src {...c.failsSource} />}</div>
       </section>
+
+      <LiveModel c={c} />
 
       <section className="building">
         <h2 className="section-head">הבניין מבחוץ ומבפנים.</h2>

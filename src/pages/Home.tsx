@@ -21,6 +21,7 @@ export default function Home() {
           <div className="hero-kpi">
             <div><span className="label">מושגים</span><bdi className="num kpi">{CONCEPTS.length}</bdi></div>
             <div><span className="label">כוחות</span><bdi className="num kpi">{FORCES.length}</bdi></div>
+            <div><span className="label">מודלים חיים</span><bdi className="num kpi">{CONCEPTS.reduce((n, c) => n + (c.models?.length || 0), 0)}</bdi></div>
             <div><span className="label">מהמחולל</span><bdi className="num kpi">{generated.length}</bdi></div>
           </div>
         </div>
