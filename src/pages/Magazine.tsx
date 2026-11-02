@@ -1,6 +1,7 @@
 import Rich from '../components/Rich';
 import { CONCEPTS, FORCES, ForceId, forceOf } from '../lib/concepts';
 import { go, href, Route } from '../lib/route';
+import { useMedia } from '../lib/media';
 import { useGenerated } from '../lib/store';
 
 // חיפוש עברי: התאמה בתחילת מילה, גם אחרי אותיות שימוש. מילה עד 3 אותיות חייבת להיות שלמה.
@@ -19,6 +20,7 @@ type Filter = ForceId | 'gen';
 
 export default function Magazine({ route }: { route: Route }) {
   const generated = useGenerated();
+  const media = useMedia();
   const q = route.params.q || '';
   const sel = (route.params.f || '').split(',').filter(Boolean) as Filter[];
   const setSel = (next: Filter[]) => go('magazine', undefined, { f: next.join(',') || undefined, q: q || undefined });
@@ -75,7 +77,7 @@ export default function Magazine({ route }: { route: Route }) {
             const f = forceOf(c.force);
             return (
               <a key={c.slug} href={href('c', c.slug)} className={`mag-card press rise ${i === 0 && !sel.length && !q ? 'mag-lead' : ''}`} style={{ ['--fc' as any]: f.color, animationDelay: `${i * 0.05}s` }}>
-                <div className="mag-img"><img src={c.images.exterior} alt={c.architecturalName} loading="lazy" /></div>
+                <div className="mag-img"><img src={media[c.id]?.exterior?.url || c.images.exterior} alt={c.architecturalName} loading="lazy" /></div>
                 <div className="mag-body">
                   <div className="mag-meta"><span className="mag-force">{f.name}</span>{c.models && <span className="mag-live">מודל חי</span>}<span className="mag-latin" dir="ltr">{c.latin}</span></div>
                   <h2 className="mag-title">{c.name}</h2>
@@ -87,7 +89,7 @@ export default function Magazine({ route }: { route: Route }) {
           })}
           {showG.map((g) => (
             <a key={g.id} href={href('c', g.id)} className="mag-card press rise mag-gen">
-              <div className="mag-img">{g.images.exterior ? <img src={g.images.exterior} alt={g.dimensions.architecturalName} loading="lazy" /> : <div className="mag-noimg">אין תמונה עדיין</div>}</div>
+              <div className="mag-img">{media[g.id]?.exterior?.url || g.images.exterior ? <img src={media[g.id]?.exterior?.url || g.images.exterior!} alt={g.dimensions.architecturalName} loading="lazy" /> : <div className="mag-noimg">אין תמונה עדיין</div>}</div>
               <div className="mag-body">
                 <div className="mag-meta"><span className="mag-force gen">מהמחולל</span></div>
                 <h2 className="mag-title">{g.concept}</h2>

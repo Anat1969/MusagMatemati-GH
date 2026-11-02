@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import TopBar from './components/TopBar';
+import { installPaste } from './lib/media';
 import { useRoute } from './lib/route';
 import { syncRemote } from './lib/store';
 import ConceptPage from './pages/ConceptPage';
@@ -10,6 +11,7 @@ import Magazine from './pages/Magazine';
 export default function App() {
   const route = useRoute();
   useEffect(() => { syncRemote(); }, []);
+  useEffect(() => installPaste(), []);
   useEffect(() => {
     const titles: Record<string, string> = { home: 'מושג מתמטי', magazine: 'מגזין · מושג מתמטי', lab: 'מחולל · מושג מתמטי' };
     document.title = titles[route.page] || 'מושג מתמטי';

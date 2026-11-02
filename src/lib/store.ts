@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { CONCEPTS } from './concepts';
 import { Dimensions, fetchArticles, upsertArticle } from './api';
+import { setRemoteMedia } from './media';
 
 // מושג שנוצר במחולל: אותו מבנה כמו באתר המקורי, נשמר מקומית ומסונכרן לשרת.
 export interface Generated {
@@ -43,6 +44,7 @@ export async function syncRemote() {
   synced = true;
   try {
     const rows = await fetchArticles();
+    setRemoteMedia(rows);
     const list: Generated[] = rows.map((r: any) => ({
       id: r.id,
       concept: r.concept,

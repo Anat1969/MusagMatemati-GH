@@ -257,3 +257,19 @@ details p { font-size: 16px; line-height: 1.85; color: var(--ink-soft); }
 .live-open:hover { color: #fff; }
 .mag-live { font-family: var(--mono); font-size: 11px; color: #111; border: 1px solid #111; padding: 0 6px; }
 .formula-he { font-family: var(--serif); font-weight: 700; font-size: clamp(22px, 2.6vw, 30px); }
+
+/* מסגרות תמונה: הדבקה, גרירה והעלאה */
+.frame { position: relative; margin: 0; outline: none; }
+.frame:focus-visible { outline: 2px solid var(--blueprint); outline-offset: 2px; }
+.frame.is-edit > img, .frame.is-edit .frame-empty { outline: 2px dashed var(--blueprint); outline-offset: -2px; }
+.frame-empty { min-height: 220px; aspect-ratio: 4 / 3; display: grid; place-content: center; gap: 6px; text-align: center; padding: 16px; cursor: pointer; color: var(--ink-soft); background: repeating-linear-gradient(45deg, var(--rule-soft) 0 8px, var(--sheet) 8px 16px); border: 1px solid var(--rule); }
+.frame-empty strong { color: var(--ink); font-size: 16px; }
+.frame-empty span { font-size: 14px; }
+.frame-drop { position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; gap: 4px; text-align: center; background: rgba(36, 73, 122, .82); color: #fff; border: 3px dashed #fff; font-size: 15px; }
+.frame-drop strong { font-size: 22px; }
+.frame-tools { position: absolute; top: 10px; right: 10px; z-index: 5; display: flex; gap: 2px; background: rgba(255, 253, 248, .95); border: 1px solid var(--rule); box-shadow: var(--shadow-1); }
+.frame-hint { position: absolute; top: 10px; left: 10px; z-index: 5; font-family: var(--mono); font-size: 11px; background: var(--blueprint); color: #fff; padding: 4px 8px; }
+.frame-status { position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); z-index: 7; font-size: 14px; padding: 6px 12px; background: var(--sheet); border-right: 4px solid var(--bank); box-shadow: var(--shadow-2); white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+.frame-status.err { border-right-color: var(--cut); }
+.frame-status.busy { border-right-color: var(--blueprint); }
+.ft-full.frame .frame-tools { top: 12px; right: 28px; }

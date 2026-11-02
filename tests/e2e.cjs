@@ -10,15 +10,20 @@ const ok = (cond, msg) => { console.log((cond ? 'PASS ' : 'FAIL ') + msg); if (!
 const DIM = { insight: 'פרקטל חוזר על עצמו בכל קנה מידה. הוא מלמד צמיחה.', architecturalName: 'היכל הפרקטל', proverb: 'כל ענף הוא עץ.', interpretation: 'הפתגם מלמד על חזרה.', imagePrompts: { exterior: 'fractal exterior', interior: 'fractal interior' } };
 const REMOTE = [{ id: 'remote-1', concept: 'סימטריה', created_at: '2026-10-01T10:00:00Z', insight: 'סימטריה היא איזון.', architectural_name: 'אולם המראה', proverb: 'p', interpretation: 'i', exterior_prompt: 'e', interior_prompt: 'i', media_assets: {} }];
 
+const MEDIA = {};
 async function mock(p, calls) {
   await p.route('**/appofapp-gh.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: MENU }));
   await p.route('**/math-creator.vercel.app/bridge.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: MC }));
   await p.route('**/*.supabase.co/**', (r) => {
     const u = r.request().url();
-    calls.push(r.request().method() + ' ' + u.replace(/^https:\/\/[^/]+/, ''));
+    calls.push(r.request().method() + ' ' + u.replace(/^https:\/\/[^/]+/, '') + (r.request().method() === 'PATCH' ? ' ' + r.request().postData() : ''));
+    if (u.includes('/storage/v1/object/') && globalThis.STORAGE_DOWN) return r.fulfill({ status: 503, body: '' });
     if (u.includes('/functions/v1/generate-dimensions')) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(DIM) });
     if (u.includes('/functions/v1/generate-images')) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ exterior: BASE + 'media/golden-ext.webp', interior: BASE + 'media/golden-int.webp' }) });
-    if (u.includes('/rest/v1/articles') && r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(REMOTE) });
+    const m = u.match(/articles\?id=eq\.([^&]+)/);
+    if (m && r.request().method() === 'PATCH') { MEDIA[m[1]] = JSON.parse(r.request().postData()).media_assets; return r.fulfill({ status: 204, body: '' }); }
+    if (m && r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ media_assets: MEDIA[m[1]] || {} }]) });
+    if (u.includes('/rest/v1/articles') && r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([...REMOTE, ...Object.entries(MEDIA).map(([id, media_assets]) => ({ id, media_assets }))]) });
     return r.fulfill({ status: 201, body: '' });
   });
 }
@@ -131,6 +136,49 @@ async function mock(p, calls) {
     await p.locator('.brand').click();
     await p.waitForFunction(() => location.hash === '#/');
     ok(true, 'שם האפליקציה מוביל לבית');
+
+    // מסגרות תמונה: הדבקה, גרירה, העלאה והחזרת המקור
+    const makeImage = (sel, kind) => p.evaluate(async ([sel, kind]) => {
+      const c = document.createElement('canvas'); c.width = 400; c.height = 300;
+      const g = c.getContext('2d'); g.fillStyle = '#c33'; g.fillRect(0, 0, 400, 300);
+      const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+      const file = new File([blob], 'x.png', { type: 'image/png' });
+      const dt = new DataTransfer(); dt.items.add(file);
+      const el = document.querySelector(sel);
+      if (kind === 'paste') { el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); }
+      else { el.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt, bubbles: true })); el.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true })); }
+    }, [sel, kind]);
+    await p.goto(BASE + '#/c/mobius', { waitUntil: 'networkidle' });
+    const EXT = '[data-frame="27fa02c0-2586-483a-a425-2c58a2b70617:exterior"]';
+    const INT = '[data-frame="27fa02c0-2586-483a-a425-2c58a2b70617:interior"]';
+    await p.locator('.pair ' + EXT).hover();
+    await makeImage('.pair ' + EXT, 'paste');
+    await p.waitForFunction((s) => document.querySelector(s + ' img')?.src.includes('/storage/v1/object/public/article-media/'), '.pair ' + EXT);
+    ok(true, 'הדבקה: התמונה עלתה לאחסון ומוצגת במסגרת');
+    ok(calls.some((c) => c.startsWith('POST /storage/v1/object/article-media/27fa02c0') && c.includes('musag-exterior')), 'הדבקה: הקובץ נשלח לדלי article-media');
+    ok(calls.some((c) => c.startsWith('PATCH /rest/v1/articles?id=eq.27fa02c0') && c.includes('"musag"')), 'הדבקה: ההחלפה נרשמה בשרת בלי למחוק את המקור');
+    ok((await p.locator('.ft-split ' + EXT + ' img').getAttribute('src')).includes('article-media'), 'אותה תמונה מתעדכנת גם בתמונה הפותחת');
+    await makeImage('.pair ' + INT, 'drop');
+    await p.waitForFunction((s) => document.querySelector(s + ' img')?.src.includes('musag-interior'), '.pair ' + INT);
+    ok(true, 'גרירה: התמונה נכנסה למסגרת הפנים');
+    await p.goto(BASE + '#/magazine', { waitUntil: 'networkidle' });
+    ok((await p.locator('.mag-card[href="#/c/mobius"] img').getAttribute('src')).includes('article-media'), 'מגזין: הכרטיס מציג את התמונה החדשה');
+    await p.evaluate(() => localStorage.setItem('mm.editing', '1'));
+    await p.goto(BASE + '#/c/mobius'); await p.reload({ waitUntil: 'networkidle' });
+    ok(await p.locator('.pair ' + EXT + ' .frame-tools').isVisible(), 'מצב עריכה: כפתורי התמונה מופיעים');
+    await p.locator('.pair ' + EXT + ' .op[aria-label="החזרת התמונה המקורית"]').click();
+    await p.waitForFunction((s) => document.querySelector(s + ' img')?.getAttribute('src') === 'media/mobius-ext.webp', '.pair ' + EXT);
+    await p.waitForFunction(() => true); for (let i = 0; i < 20 && !calls.filter((c) => c.startsWith('PATCH')).pop().includes('"exterior":{}'); i++) await p.waitForTimeout(100);
+    ok(calls.filter((c) => c.startsWith('PATCH')).pop().includes('"exterior":{}'), 'החזרת המקור: ההחלפה נמחקה, המקור נשאר');
+    await p.locator('.pair ' + EXT + ' input[type=file]').setInputFiles({ name: 'a.txt', mimeType: 'text/plain', buffer: Buffer.from('x') });
+    ok((await p.locator('.pair ' + EXT + ' .frame-status').innerText()).includes('זה לא קובץ תמונה'), 'קובץ שאינו תמונה: הסבר ודרך תיקון');
+    globalThis.STORAGE_DOWN = true;
+    await makeImage('.pair ' + EXT, 'drop');
+    await p.waitForSelector('.pair ' + EXT + ' .frame-status:has-text("במכשיר הזה")');
+    ok((await p.locator('.pair ' + EXT + ' img').getAttribute('src')).startsWith('data:image/webp'), 'בלי שרת: התמונה נשמרת במכשיר, עם חיווי');
+    globalThis.STORAGE_DOWN = false;
+    await p.evaluate(() => { localStorage.removeItem('mm.editing'); localStorage.removeItem('mm.media.local.v1'); });
+    await p.goto(BASE + '#/', { waitUntil: 'networkidle' });
 
     const radius = await p.evaluate(() => [...document.querySelectorAll('button, .field, .search-field')].every((x) => getComputedStyle(x).borderRadius === '0px'));
     ok(radius, 'כל הכפתורים והשדות מרובעים');
