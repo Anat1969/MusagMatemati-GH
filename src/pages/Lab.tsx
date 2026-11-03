@@ -64,7 +64,7 @@ export default function Lab({ route }: { route: Route }) {
     if (!result) return;
     const id = uid();
     const where = await saveGenerated({ id, concept: q, createdAt: new Date().toISOString(), dimensions: result, images });
-    setSaved({ id, where: where === 'saved' ? 'נשמר במגזין ובשרת' : 'נשמר במכשיר הזה. לשמירה לכולם: כניסה בכפתור הלוגו' });
+    setSaved({ id, where: where === 'saved' ? 'נשמר במגזין ובשרת' : 'נשמר במכשיר הזה. לשמירה לכולם: פתחי את הקישור האישי במכשיר הזה' });
   };
 
   const submit = (v: string) => { const t = v.trim(); if (!t) return; started.current = ''; try { sessionStorage.removeItem(cacheKey(t)); } catch { /* ignore */ } go('lab', undefined, { q: t }); if (t === q) { started.current = t; run(t); } };

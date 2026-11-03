@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { OWNER, signIn, signOut, useAuth } from '../lib/auth';
+import { deviceNote, OWNER, signIn, signOut, useAuth } from '../lib/auth';
 import { setEditing, useEditing } from '../lib/media';
 import { go } from '../lib/route';
 
@@ -24,13 +24,14 @@ export default function AIMenu() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.status = note || (email ? (isOwner ? `מחוברת: ${email}` : `${email}: צפייה בלבד`) : editing ? 'מצב עריכה: שמירה במכשיר עד הכניסה' : '');
+    // זיהוי המכשיר גובר על הודעה ישנה (למשל "נשלח קישור"), כדי שלא יישאר מצב שכבר לא נכון.
+    el.status = isOwner ? deviceNote || 'מזוהה: המכשיר שלך' : note || deviceNote || (email ? `${email}: צפייה בלבד` : editing ? 'מצב עריכה: שמירה במכשיר עד הזיהוי' : '');
     el.items = [
       { label: editing ? 'סיום עריכה' : 'מצב עריכה', hint: editing ? 'פעיל' : 'תמונות במסגרות', pressed: editing, onSelect: () => setEditing(!editing) },
       email
-        ? { label: 'יציאה', hint: email, onSelect: () => signOut() }
+        ? { label: 'ניתוק המכשיר הזה', hint: email, onSelect: () => signOut() }
         : {
-            label: 'כניסה: קישור למייל',
+            label: 'מכשיר חדש: קישור למייל',
             hint: OWNER,
             onSelect: () => {
               setNote('שולח קישור...');

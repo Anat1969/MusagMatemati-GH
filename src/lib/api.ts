@@ -5,6 +5,7 @@ export const SB_ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZWl2bGthcXJuc3F2dHpmeXB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzc2NTMsImV4cCI6MjA5MTc1MzY1M30.TLQajdlydTn5StneXvyIgyc5QM6rug6DujVqDyu_qcg';
 
 const headers = { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`, 'Content-Type': 'application/json' };
+const auth = async () => (await import('./auth')).writeHeaders();
 
 export interface Dimensions {
   insight: string;
@@ -15,7 +16,8 @@ export interface Dimensions {
 }
 
 async function call<T>(fn: string, body: unknown): Promise<T> {
-  const res = await fetch(`${SB_URL}/functions/v1/${fn}`, { method: 'POST', headers, body: JSON.stringify(body) });
+  // עם הזיהוי של הבעלים כשיש: יצירת תמונות פתוחה רק לה (הבדיקה בפונקציה בשרת).
+  const res = await fetch(`${SB_URL}/functions/v1/${fn}`, { method: 'POST', headers: { ...headers, ...(await auth()) }, body: JSON.stringify(body) });
   let data: any = null;
   try { data = await res.json(); } catch { /* empty */ }
   if (!res.ok || data?.error) throw new Error(data?.error || `השרת החזיר ${res.status}`);
@@ -31,8 +33,6 @@ export async function fetchArticles(): Promise<any[]> {
   if (!res.ok) throw new Error(`articles ${res.status}`);
   return res.json();
 }
-
-const auth = async () => (await import('./auth')).writeHeaders();
 
 export async function upsertArticle(row: Record<string, unknown>) {
   const res = await fetch(`${SB_URL}/rest/v1/articles`, {
