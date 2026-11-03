@@ -273,3 +273,9 @@ details p { font-size: 16px; line-height: 1.85; color: var(--ink-soft); }
 .frame-status.err { border-right-color: var(--cut); }
 .frame-status.busy { border-right-color: var(--blueprint); }
 .ft-full.frame .frame-tools { top: 12px; right: 28px; }
+
+/* מודל חי מתאים למושג מהמחולל */
+.live-suggest { margin: 24px 0; display: grid; gap: 8px; }
+.live-suggest-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 14px; text-decoration: none; color: var(--ink); border: 1px solid #111; box-shadow: 4px 4px 0 var(--blueprint); background: #fff; }
+.live-suggest-row .nm { font-family: var(--serif); font-size: 20px; }
+.live-suggest-plain { grid-column: 1 / -1; font-size: 14px; color: var(--ink-soft); line-height: 1.6; }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MC_SITE, MCModel } from './bridge';
+import { matches } from './search';
 
 // קורא את bridge.json של "מודל חי". נשמר במכשיר, כך שהחיבור עובד גם כשהרשת איטית; בלי רשת, נשארים הקישורים.
 const KEY = 'mm.modelchai.v1';
@@ -28,4 +29,18 @@ export function useModelChai() {
   const [models, setModels] = useState<Record<string, MCModel>>(() => cache || readLocal() || {});
   useEffect(() => { let on = true; load().then((m) => { if (on) setModels(m); }); return () => { on = false; }; }, []);
   return models;
+}
+
+/**
+ * Models in the atlas of "מודל חי" that a new concept may be: the name first, then the description.
+ * For the generator: a concept typed by hand finds its live model (e.g. "פרקטל" finds the Koch snowflake).
+ */
+export function findModels(atlas: Record<string, MCModel>, concept: string, limit = 2): MCModel[] {
+  const q = concept.replace(/[׳'"״]/g, '').trim()
+  if (q.length < 2) return []
+  const all = Object.values(atlas)
+  const clean = (t: string) => t.replace(/[׳'"״]/g, '')
+  const byName = all.filter((m) => matches(clean(`${m.name_he} ${m.name}`), q))
+  const byText = all.filter((m) => !byName.includes(m) && matches(clean(m.plain.split(/(?<=\.)\s/)[0] || ''), q))
+  return [...byName, ...byText].slice(0, limit)
 }
