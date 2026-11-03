@@ -2,7 +2,9 @@ import { createClient, type Session } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { SB_ANON, SB_URL } from './api';
 
-// כניסה בקישור למייל של הבעלים, בלי סיסמה. רק הבעלים כותבת לשרת (RLS לפי האימייל); כל השאר קוראים.
+// זיהוי הבעלים בלי כניסה: קישור אישי (#/me?k=…) שנפתח פעם אחת בכל מכשיר, והמכשיר זוכר מאז (בקשת ענת,
+// 03.11.2026). המפתח הוא האישור היחיד של המשתמשת, והוא לא נשמר בקוד. קישור למייל נשאר כגיבוי.
+// רק הבעלים כותבת לשרת ומפעילה יצירת תמונות (RLS ובדיקה בפונקציה לפי האימייל); כל השאר קוראים.
 // Google המנוהל של Lovable Cloud עובד רק דרך המתווך של Lovable, שקיים רק בדומיין של Lovable,
 // ובשרת עצמו אין לו סוד OAuth ("missing OAuth secret"). לכן ב-Vercel: קישור למייל.
 export const OWNER = 'shtanat5@gmail.com';
@@ -17,6 +19,21 @@ let ls: (() => void)[] = [];
 const emit = () => ls.forEach((l) => l());
 
 sb.auth.getSession().then(({ data }) => { session = data.session; emit(); afterReturn(); });
+claimFromLink();
+// גם כשהקישור נפתח בלשונית שהאפליקציה כבר פתוחה בה: רק ה-hash משתנה.
+window.addEventListener('hashchange', () => { claimFromLink(); });
+
+/** "המכשיר הזה שלי": הקישור האישי נושא את המפתח. נכנסים בשקט, שומרים את הסשן, ומנקים את הכתובת מיד. */
+export let deviceNote = '';
+async function claimFromLink() {
+  const m = window.location.hash.match(/^#\/me\?k=([A-Za-z0-9_-]{20,})/);
+  if (!m) return;
+  history.replaceState(null, '', window.location.pathname + '#/');
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+  const { error } = await sb.auth.signInWithPassword({ email: OWNER, password: m[1]! });
+  deviceNote = error ? 'הקישור האישי לא זוהה. אפשר לבקש קישור חדש.' : 'המכשיר הזה מזוהה כשלך. מעכשיו בלי כניסה.'
+  emit()
+}
 sb.auth.onAuthStateChange((_e, s) => { session = s; emit(); });
 
 // אחרי החזרה מ-Google: הכתובת נושאת ?code=. מנקים אותה וחוזרים לדף שממנו יצאנו.

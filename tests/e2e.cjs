@@ -13,6 +13,7 @@ const REMOTE = [{ id: 'remote-1', concept: 'סימטריה', created_at: '2026-1
 const MEDIA = {};
 const AUTHS = [];
 const OTP_BODIES = [];
+const TOKEN_BODIES = [];
 // סשן מזויף של הבעלים, כדי שהכתיבה תיצא עם הכניסה שלה (התוקף רחוק, ולכן בלי רענון ברשת).
 const OWNER_SESSION = JSON.stringify({ access_token: 'owner-token', refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: { id: 'u1', aud: 'authenticated', role: 'authenticated', email: 'shtanat5@gmail.com', app_metadata: { provider: 'google' }, user_metadata: {}, created_at: '2026-11-02T00:00:00Z' } });
 async function mock(p, calls) {
@@ -21,6 +22,7 @@ async function mock(p, calls) {
   await p.route('**/*.supabase.co/**', (r) => {
     const u = r.request().url();
     if (r.request().method() !== 'GET') AUTHS.push(r.request().headers()['authorization']);
+    if (u.includes('/auth/v1/token?grant_type=password')) { TOKEN_BODIES.push(r.request().postData() || ''); return r.fulfill({ status: 200, contentType: 'application/json', body: OWNER_SESSION }); }
     if (u.includes('/auth/v1/otp')) { OTP_BODIES.push(r.request().postData() || ''); return r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); }
     calls.push(r.request().method() + ' ' + u.replace(/^https:\/\/[^/]+/, '') + (r.request().method() === 'PATCH' ? ' ' + r.request().postData() : ''));
     if (u.includes('/storage/v1/object/') && globalThis.STORAGE_DOWN) return r.fulfill({ status: 503, body: '' });
@@ -119,9 +121,11 @@ async function mock(p, calls) {
     await p.waitForSelector('.lab-title');
     ok(await p.locator('.lab-title').innerText() === 'היכל הפרקטל', 'מחולל: מושג חוזר מהשרת');
     ok(calls.some((c) => c.includes('generate-dimensions')), 'מחולל: נשלחה בקשה ל-generate-dimensions');
+    const nImgAuth = AUTHS.length;
     await p.getByRole('button', { name: 'יצירת תמונות' }).click();
     await p.waitForSelector('.lab-img img');
     ok(await p.locator('.lab-img img').count() === 2, 'מחולל: שתי תמונות');
+    ok(AUTHS.slice(nImgAuth).includes('Bearer owner-token'), 'יצירת תמונות יוצאת עם הזיהוי של הבעלים');
     await p.getByRole('button', { name: 'שמירה במגזין' }).click();
     await p.waitForSelector('.saved-line');
     ok(calls.some((c) => c.startsWith('POST /rest/v1/articles')), 'מחולל: נשמר לשרת');
@@ -192,8 +196,8 @@ async function mock(p, calls) {
     await gctx.addInitScript(() => sessionStorage.setItem('guest', '1'));
     const gp = await gctx.newPage(); const gcalls = []; await mock(gp, gcalls);
     await gp.goto(BASE + '#/c/integral', { waitUntil: 'networkidle' });
-    ok((await gp.locator('ai-menu').evaluate((el) => el.items.map((i) => i.label).join('|'))).includes('כניסה: קישור למייל'), 'אורחת: כניסה בקישור למייל, בתוך כפתור הלוגו');
-    await gp.locator('ai-menu').evaluate((el) => el.items.find((i) => i.label.startsWith('כניסה')).onSelect());
+    ok((await gp.locator('ai-menu').evaluate((el) => el.items.map((i) => i.label).join('|'))).includes('מכשיר חדש: קישור למייל'), 'אורחת: כניסה בקישור למייל, בתוך כפתור הלוגו');
+    await gp.locator('ai-menu').evaluate((el) => el.items.find((i) => i.label.startsWith('מכשיר חדש')).onSelect());
     await gp.waitForFunction(() => (document.querySelector('ai-menu').status || '').startsWith('נשלח קישור'));
     ok(OTP_BODIES.length === 1 && JSON.parse(OTP_BODIES[0]).email === 'shtanat5@gmail.com', 'כניסה: קישור נשלח למייל של הבעלים בלבד');
     await gp.evaluate(async () => {
@@ -201,8 +205,16 @@ async function mock(p, calls) {
       const dt = new DataTransfer(); dt.items.add(new File([blob], 'g.png', { type: 'image/png' }));
       const el = document.querySelector('.pair .frame'); el.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
     });
-    await gp.waitForSelector('.pair .frame .frame-status:has-text("כניסה בכפתור הלוגו")');
+    await gp.waitForSelector('.pair .frame .frame-status:has-text("הקישור האישי")');
     ok(!gcalls.some((c) => c.startsWith('POST /storage')), 'אורחת: התמונה לא נשלחה לשרת, ונשמרה במכשיר עם הסבר');
+    // הקישור האישי: פעם אחת במכשיר, בלי כניסה. המפתח לא נשאר בכתובת.
+    const KEY = 'test-key-0123456789abcdefghij'
+    await gp.goto(BASE + '#/me?k=' + KEY)
+    await gp.waitForFunction(() => (document.querySelector('ai-menu').status || '').includes('מזוהה'))
+    ok(!gp.url().includes(KEY) && gp.url().endsWith('#/'), 'קישור אישי: המפתח נמחק מהכתובת מיד')
+    ok(TOKEN_BODIES.length === 1 && JSON.parse(TOKEN_BODIES[0]).email === 'shtanat5@gmail.com' && JSON.parse(TOKEN_BODIES[0]).password === KEY, 'קישור אישי: המכשיר מזוהה כשל הבעלים, בלי טופס')
+    await gp.reload({ waitUntil: 'networkidle' })
+    ok((await gp.locator('ai-menu').evaluate((el) => el.status)) === 'מזוהה: המכשיר שלך', 'קישור אישי: המכשיר זוכר אחרי רענון')
     await gctx.close();
 
 
