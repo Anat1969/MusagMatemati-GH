@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import CopyButton from '../components/CopyButton';
+import LiveSuggest from '../components/LiveSuggest';
 import Rich from '../components/Rich';
 import { Dimensions, generateDimensions, generateImages } from '../lib/api';
 import { EXAMPLES } from '../lib/concepts';
@@ -113,6 +114,7 @@ export default function Lab({ route }: { route: Route }) {
           <Rich as="p" className="lab-insight">{`==${result.insight.split(/(?<=[.!?])\s+/)[0]}==`}</Rich>
           <Rich as="p" className="muted">{lines(result.insight.split(/(?<=[.!?])\s+/).slice(1).join(' '))}</Rich>
           <blockquote className="lab-proverb">״{result.proverb}״</blockquote>
+          <LiveSuggest concept={q} />
           <Rich as="p" className="muted">{lines(result.interpretation)}</Rich>
 
           <div className="pair">

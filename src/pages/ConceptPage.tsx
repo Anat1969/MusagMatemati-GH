@@ -3,6 +3,7 @@ import CopyButton from '../components/CopyButton';
 import Diagram from '../components/Diagram';
 import ImageFrame from '../components/ImageFrame';
 import LiveModel from '../components/LiveModel';
+import LiveSuggest from '../components/LiveSuggest';
 import Rich, { Name, Src } from '../components/Rich';
 import { bySlug, CONCEPTS, Concept, forceOf } from '../lib/concepts';
 import { go, href } from '../lib/route';
@@ -239,6 +240,7 @@ function GeneratedArticle({ g }: { g: Generated }) {
         </section>
         <section><span className="label">תובנה</span><Rich as="p" className="ft-p">{lines(d.insight)}</Rich></section>
         <section><span className="label">פרשנות</span><Rich as="p" className="ft-p">{lines(d.interpretation)}</Rich></section>
+        <LiveSuggest concept={g.concept} />
         <div className="tone tone-neutral"><h4>טיוטה מהמחולל.</h4><p>הטקסט נוצר במודל ולא נבדק מול מקור. כלל, תקדים ודוגמה מהעיר נוספים כשהמושג עולה למגזין.</p></div>
         <section className="prompts">
           <h2 className="section-head">פרומפטים לתמונה.</h2>

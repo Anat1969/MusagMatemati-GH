@@ -121,6 +121,9 @@ async function mock(p, calls) {
     await p.waitForSelector('.lab-title');
     ok(await p.locator('.lab-title').innerText() === 'היכל הפרקטל', 'מחולל: מושג חוזר מהשרת');
     ok(calls.some((c) => c.includes('generate-dimensions')), 'מחולל: נשלחה בקשה ל-generate-dimensions');
+    await p.waitForSelector('.live-suggest-row');
+    ok((await p.locator('.live-suggest-row').first().getAttribute('data-model')) === 'koch', 'מחולל: "פרקטל" מקבל את פתית קוך ממודל חי');
+    ok((await p.locator('.live-suggest-row').first().getAttribute('href')) === 'https://math-creator.vercel.app/#/learn?m=koch', 'מחולל: קישור ישיר למודל');
     const nImgAuth = AUTHS.length;
     await p.getByRole('button', { name: 'יצירת תמונות' }).click();
     await p.waitForSelector('.lab-img img');
